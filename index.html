@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound-to-Binary Converter</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --ink: #203047;
+      --muted: #64748b;
+      --accent: #6c3bd1;
+      --accent-dark: #5125a8;
+      --border: #dce3ee;
+      --good: #137547;
+      --bad: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #eef2ff, var(--bg));
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+    header { text-align: center; margin-bottom: 22px; }
+    h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 4vw, 2.5rem); }
+    header p { color: var(--muted); margin: 0; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px 0;
+      box-shadow: 0 8px 24px rgba(30, 41, 59, 0.06);
+    }
+    h2 { margin: 0 0 14px; font-size: 1.25rem; }
+    .inputs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    label { display: block; font-weight: 700; font-size: .93rem; }
+    input {
+      width: 100%;
+      margin-top: 7px;
+      padding: 11px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      font: inherit;
+      background: white;
+      color: var(--ink);
+    }
+    input:focus { outline: 3px solid #ddd6fe; border-color: var(--accent); }
+    .hint { display: block; color: var(--muted); font-size: .8rem; font-weight: 400; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .primary { background: var(--accent); color: white; margin-top: 16px; }
+    .primary:hover { background: var(--accent-dark); }
+    .secondary { background: #ede9fe; color: var(--accent-dark); }
+    .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    #warning { display: none; padding: 12px 14px; border-radius: 10px; color: var(--bad); background: #fff1f0; border: 1px solid #fecaca; margin-top: 14px; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .stat { padding: 14px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); }
+    .stat .label { color: var(--muted); font-size: .85rem; }
+    .stat .value { font-size: 1.25rem; font-weight: 800; margin-top: 4px; overflow-wrap: anywhere; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { text-align: center; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    th { background: #f1edff; }
+    tbody tr:nth-child(even) { background: #fafaff; }
+    .binary-output {
+      padding: 16px;
+      border-radius: 10px;
+      background: #101827;
+      color: #b8f7cf;
+      font-family: Consolas, Monaco, monospace;
+      overflow-wrap: anywhere;
+      min-height: 52px;
+    }
+    .small-note { color: var(--muted); font-size: .9rem; }
+    .explain-list { padding-left: 22px; }
+    .test-table td:first-child, .test-table th:first-child { font-weight: 700; }
+    .status { font-weight: 700; color: var(--good); }
+    footer { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 22px; }
+    @media (max-width: 760px) {
+      .inputs, .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .card { padding: 16px; }
+    }
+    @media (max-width: 420px) {
+      .inputs, .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Sound-to-Binary Converter</h1>
+      <p>Explore how a sound wave can be sampled and represented in binary.</p>
+      <p class="small-note">Name: <strong>SWEET JENEICAH C. TALABA</strong> &nbsp; | &nbsp; Section: <strong>BSCS 2_NO SECTION</strong></p>
+    </header>
+
+    <section class="card">
+      <h2>Wave Settings</h2>
+      <div class="inputs">
+        <label for="frequency">Frequency (Hz)
+          <span class="hint">Must be greater than 0</span>
+          <input id="frequency" type="number" value="1000" min="0.000001" step="any">
+        </label>
+        <label for="amplitude">Amplitude
+          <span class="hint">From 0 to 1</span>
+          <input id="amplitude" type="number" value="1" min="0" max="1" step="any">
+        </label>
+        <label for="samples">Number of samples
+          <span class="hint">Whole number: 2 to 64</span>
+          <input id="samples" type="number" value="4" min="2" max="64" step="1">
+        </label>
+        <label for="bits">Bits per sample
+          <span class="hint">Whole number: 1 to 8</span>
+          <input id="bits" type="number" value="2" min="1" max="8" step="1">
+        </label>
+      </div>
+      <div class="button-row">
+        <button class="primary" id="convertBtn" type="button">Convert</button>
+        <button class="secondary" id="resetBtn" type="button">Reset example</button>
+      </div>
+      <div id="warning" role="alert"></div>
+    </section>
+
+    <section class="card" aria-live="polite">
+      <h2>Wave Facts</h2>
+      <div class="stats">
+        <div class="stat"><div class="label">Period</div><div class="value" id="period">1.00 ms</div></div>
+        <div class="stat"><div class="label">Wavelength</div><div class="value" id="wavelength">34.3 cm</div></div>
+        <div class="stat"><div class="label">Number of levels</div><div class="value" id="levels">4</div></div>
+        <div class="stat"><div class="label">Total bits</div><div class="value" id="totalBits">8 bits</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Sample Table</h2>
+      <p class="small-note">Each row represents one sample from a single wave period.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Sample #</th><th>Time (ms)</th><th>Amplitude</th><th>Level</th><th>Binary</th></tr>
+          </thead>
+          <tbody id="sampleRows">
+            <tr><td>1</td><td>0.00</td><td>0.00</td><td>2</td><td>10</td></tr>
+            <tr><td>2</td><td>0.25</td><td>1.00</td><td>3</td><td>11</td></tr>
+            <tr><td>3</td><td>0.50</td><td>0.00</td><td>2</td><td>10</td></tr>
+            <tr><td>4</td><td>0.75</td><td>-1.00</td><td>0</td><td>00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Whole Binary Result</h2>
+      <div id="binaryResult" class="binary-output">10 11 10 00</div>
+      <p><strong>Total bits:</strong> <span id="totalBitsText">8</span></p>
+      <p class="small-note">Each sample is written using exactly the selected number of bits.</p>
+    </section>
+
+    <section class="card">
+      <h2>Test Results (Graded)</h2>
+      <p class="small-note">These results are generated by this app using the settings shown in each row.</p>
+      <div class="table-wrap">
+        <table class="test-table">
+          <thead><tr><th>Test</th><th>Frequency</th><th>Amplitude</th><th>Samples</th><th>Bits</th><th>Period</th><th>Wavelength</th><th>Total bits</th><th>Binary result</th></tr></thead>
+          <tbody id="testRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Explain It</h2>
+      <ol class="explain-list">
+        <li><strong>How does your app change a sound wave into binary?</strong><br>
+          The app samples the wave at evenly spaced times, maps each sample's height to a digital level, and writes that level in binary using the selected number of bits.</li>
+        <li><strong>Which gives more detail: 2 bits or 6 bits? Why?</strong><br>
+          Six bits gives more detail because it provides 64 possible levels, while 2 bits provides only 4 levels.</li>
+        <li><strong>Which test has the longest wavelength compared to frequency?</strong><br>
+          The test with the lowest frequency has the longest wavelength because wavelength equals the speed of sound divided by frequency.</li>
+        <li><strong>What was the hardest stage to build, and how did you fix it?</strong><br>
+          The hardest stage was converting each sampled height into a level and binary. I fixed it by calculating the number of levels first, rounding each sample to a valid level, and padding the binary values to the selected bit depth.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>Optional Bonus: Play Tone</h2>
+      <p class="small-note">Plays a short tone at the frequency currently entered. Turn your volume down first.</p>
+      <button class="secondary" id="playBtn" type="button">Play 1-second tone</button>
+      <span id="playStatus" class="small-note" aria-live="polite"></span>
+    </section>
+
+    <footer>Sound-to-Binary Converter • Built with HTML, CSS, and JavaScript</footer>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function readSettings() {
+      return {
+        frequency: Number($("frequency").value),
+        amplitude: Number($("amplitude").value),
+        samples: Number($("samples").value),
+        bits: Number($("bits").value)
+      };
+    }
+
+    function validate(s) {
+      if (!Number.isFinite(s.frequency) || s.frequency <= 0) return "Frequency must be greater than 0.";
+      if (!Number.isFinite(s.amplitude) || s.amplitude < 0 || s.amplitude > 1) return "Amplitude must be between 0 and 1.";
+      if (!Number.isInteger(s.samples) || s.samples < 2 || s.samples > 64) return "Samples must be a whole number from 2 to 64.";
+      if (!Number.isInteger(s.bits) || s.bits < 1 || s.bits > 8) return "Bits must be a whole number from 1 to 8.";
+      return "";
+    }
+
+    function formatWavelength(meters) {
+      if (meters >= 1) return meters.toFixed(2) + " m";
+      return (meters * 100).toFixed(1) + " cm";
+    }
+
+    function calculate(s) {
+      const periodMs = 1000 / s.frequency;
+      const wavelengthM = 343 / s.frequency;
+      const levels = 2 ** s.bits;
+      const rows = [];
+
+      for (let i = 0; i < s.samples; i++) {
+        const timeMs = i * periodMs / s.samples;
+        const height = s.amplitude * Math.sin(2 * Math.PI * i / s.samples);
+        // Map [-amplitude, +amplitude] into [0, levels - 1].
+        const rawLevel = ((height / (s.amplitude || 1)) + 1) / 2 * (levels - 1);
+        const level = s.amplitude === 0 ? Math.round((levels - 1) / 2) : Math.min(levels - 1, Math.max(0, Math.floor(rawLevel + 0.5)));
+        const binary = level.toString(2).padStart(s.bits, "0");
+        rows.push({ sample: i + 1, timeMs, height, level, binary });
+      }
+      return { periodMs, wavelengthM, levels, rows, totalBits: s.samples * s.bits };
+    }
+
+    function render(s, result) {
+      $("warning").style.display = "none";
+      $("period").textContent = result.periodMs.toFixed(2) + " ms";
+      $("wavelength").textContent = formatWavelength(result.wavelengthM);
+      $("levels").textContent = result.levels;
+      $("totalBits").textContent = result.totalBits + " bits";
+      $("totalBitsText").textContent = result.totalBits;
+
+      $("sampleRows").innerHTML = result.rows.map(r => `
+        <tr>
+          <td>${r.sample}</td>
+          <td>${r.timeMs.toFixed(2)}</td>
+          <td>${r.height.toFixed(2)}</td>
+          <td>${r.level}</td>
+          <td><code>${r.binary}</code></td>
+        </tr>`).join("");
+
+      $("binaryResult").textContent = result.rows.map(r => r.binary).join(" ");
+    }
+
+    function showWarning(message) {
+      $("warning").textContent = message;
+      $("warning").style.display = "block";
+    }
+
+    function convert() {
+      const settings = readSettings();
+      const error = validate(settings);
+      if (error) {
+        showWarning(error);
+        return false;
+      }
+      render(settings, calculate(settings));
+      return true;
+    }
+
+    function runTestResults() {
+      const tests = [
+        { name: "A", frequency: 440, amplitude: 0.8, samples: 8, bits: 3 },
+        { name: "B", frequency: 200, amplitude: 0.5, samples: 6, bits: 4 },
+        { name: "C", frequency: 500, amplitude: 0.9, samples: 5, bits: 3 }
+      ];
+      $("testRows").innerHTML = tests.map(t => {
+        const r = calculate(t);
+        return `<tr>
+          <td>${t.name}</td><td>${t.frequency}</td><td>${t.amplitude}</td>
+          <td>${t.samples}</td><td>${t.bits}</td>
+          <td>${r.periodMs.toFixed(2)} ms</td><td>${formatWavelength(r.wavelengthM)}</td>
+          <td>${r.totalBits}</td><td><code>${r.rows.map(x => x.binary).join(" ")}</code></td>
+        </tr>`;
+      }).join("");
+    }
+
+    $("convertBtn").addEventListener("click", convert);
+    $("resetBtn").addEventListener("click", () => {
+      $("frequency").value = 1000;
+      $("amplitude").value = 1;
+      $("samples").value = 4;
+      $("bits").value = 2;
+      convert();
+    });
+
+    $("playBtn").addEventListener("click", () => {
+      const s = readSettings();
+      const error = validate(s);
+      if (error) {
+        showWarning(error);
+        return;
+      }
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) throw new Error("Audio is not supported by this browser.");
+        const ctx = new AudioContextClass();
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = s.frequency;
+        gain.gain.value = Math.min(0.15, s.amplitude * 0.15);
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 1);
+        $("playStatus").textContent = " Playing tone...";
+        oscillator.onended = () => {
+          $("playStatus").textContent = " Finished.";
+          ctx.close();
+        };
+      } catch (e) {
+        showWarning(e.message || "Could not play tone in this browser.");
+      }
+    });
+
+    runTestResults();
+    convert();
+  </script>
+</body>
+</html>
